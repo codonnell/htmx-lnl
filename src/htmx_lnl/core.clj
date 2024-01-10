@@ -64,6 +64,12 @@
       (db/delete-card-by-id db/card-db id))
     (resp/redirect "/" :see-other)))
 
+(defn delete-handler [request]
+  (let [id (-> request :path-params :id parse-long)]
+    (when id
+      (db/delete-card-by-id db/card-db id))
+    (resp/response "")))
+
 (defn validate-title-handler [request]
   (let [title (-> request :query-params (get "title"))
         error (:title (card-errors {:title title}))]
@@ -76,7 +82,8 @@
                 :post new-post-handler}]
     ["/:id/edit" {:get edit-get-handler
                   :post edit-post-handler}]
-    ["/:id/delete" {:post delete-post-handler}]
+    ["/:id/delete" {:post delete-post-handler
+                    :delete delete-handler}]
     ["/validate-title" {:get validate-title-handler}]]))
 
 (def app (-> (reitit/ring-handler router)

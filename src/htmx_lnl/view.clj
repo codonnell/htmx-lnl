@@ -31,7 +31,12 @@
     [:button.card-header-icon
      [:a {:href (str "/" (:id card) "/edit")}
       [:span.icon
-       [:i.fa-solid.fa-pencil]]]]]])
+       [:i.fa-solid.fa-pencil]]]]]
+   [:div.card-content
+    [:a. {:hx-delete (str "/" (:id card) "/delete")
+          :hx-target "closest div.card"
+          :hx-swap "outerHTML"}
+     "Delete"]]])
 
 (defn kanban-column [{:keys [stage cards]}]
   (into [:div.column [:h2.subtitle.has-text-centered (get db/stages stage)]] (map kanban-card) cards))
