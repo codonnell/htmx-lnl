@@ -23,6 +23,8 @@
     (assoc :id "Invalid id")
     (str/blank? (:title card))
     (assoc :title "Title is required")
+    (str/includes? (:title card) "JIRA")
+    (assoc :title "Thou speakest not of JIRA")
     (not (db/stages (keyword (:stage card))))
     (assoc :stage "Invalid stage")))
 
@@ -62,6 +64,11 @@
       (db/delete-card-by-id db/card-db id))
     (resp/redirect "/" :see-other)))
 
+(defn validate-title-handler [request]
+  (let [title (-> request :query-params (get "title"))
+        error (:title (card-errors {:title title}))]
+    (resp/response (or error ""))))
+
 (def router
   (reitit/router
    [["/" {:get root-handler}]
@@ -69,7 +76,8 @@
                 :post new-post-handler}]
     ["/:id/edit" {:get edit-get-handler
                   :post edit-post-handler}]
-    ["/:id/delete" {:post delete-post-handler}]]))
+    ["/:id/delete" {:post delete-post-handler}]
+    ["/validate-title" {:get validate-title-handler}]]))
 
 (def app (-> (reitit/ring-handler router)
              params/wrap-params))

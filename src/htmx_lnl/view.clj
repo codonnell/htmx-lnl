@@ -57,7 +57,13 @@
     [:div.field
      [:label.label "Title"]
      [:div.control
-      [:input.input {:form "edit-form" :type "text" :name "title" :placeholder "Card title" :value (:title card "")}]]
+      [:input.input {:form "edit-form"
+                     :type "text"
+                     :name "title"
+                     :placeholder "Card title"
+                     :value (:title card "")
+                     :hx-get "/validate-title"
+                     :hx-target "next p.help.is-danger"}]]
      [:p.help.is-danger (get errors :title)]]
     [:div.field
      [:label.label "Stage"]
