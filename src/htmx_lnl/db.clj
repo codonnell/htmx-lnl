@@ -14,6 +14,12 @@
        (sort-by :title)
        (group-by :stage)))
 
+(defn cards-for-stage [db stage]
+  (->> @db
+       vals
+       (filter #(= stage (:stage %)))
+       (sort-by :title)))
+
 (defn update-card [db card]
   (swap! db update (:id card) merge card))
 

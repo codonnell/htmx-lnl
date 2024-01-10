@@ -1,12 +1,15 @@
 (ns htmx-lnl.core
-  (:require [clojure.string :as str]
-            [htmx-lnl.db :as db]
-            [htmx-lnl.view :as view]
-            [ring.adapter.jetty :as jetty]
-            [ring.middleware.params :as params]
-            [ring.middleware.reload :as reload]
-            [ring.util.response :as resp]
-            [reitit.ring :as reitit]))
+  (:require
+   [clojure.string :as str]
+   [hiccup2.core :as h]
+   [htmx-lnl.db :as db]
+   [htmx-lnl.view :as view]
+   [reitit.ring :as reitit]
+   [ring.adapter.jetty :as jetty]
+   [ring.middleware.params :as params]
+   [ring.middleware.reload :as reload]
+   [ring.middleware.stacktrace :as stacktrace]
+   [ring.util.response :as resp]))
 
 (defn root-handler [_request]
   (resp/response (view/page-layout (view/trial-board (db/cards-by-stage db/card-db)))))
@@ -58,6 +61,22 @@
         (db/update-card db/card-db card)
         (resp/redirect "/" :see-other)))))
 
+(defn change-stage-handler [request]
+  (let [{:keys [stage] :as card} (-> request
+                                     :form-params
+                                     (update-keys keyword)
+                                     (update :id parse-long)
+                                     (update :stage keyword))]
+    (if (not (contains? db/stages stage))
+      (resp/bad-request "Invalid stage")
+      (do
+        (db/update-card db/card-db card)
+        (resp/response (str (h/html
+                             [:div {:id (str "card-" (:id card))
+                                    :hx-swap-oob "delete"}]
+                             (view/kanban-column {:stage stage
+                                                  :cards (db/cards-for-stage db/card-db stage)}))))))))
+
 (defn delete-post-handler [request]
   (let [id (-> request :path-params :id parse-long)]
     (when id
@@ -80,6 +99,7 @@
    [["/" {:get root-handler}]
     ["/create" {:get new-get-handler
                 :post new-post-handler}]
+    ["/change-stage" {:post change-stage-handler}]
     ["/:id/edit" {:get edit-get-handler
                   :post edit-post-handler}]
     ["/:id/delete" {:post delete-post-handler
@@ -87,7 +107,8 @@
     ["/validate-title" {:get validate-title-handler}]]))
 
 (def app (-> (reitit/ring-handler router)
-             params/wrap-params))
+             params/wrap-params
+             stacktrace/wrap-stacktrace))
 
 (defn main [& _args]
   (jetty/run-jetty (reload/wrap-reload #'app)

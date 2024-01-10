@@ -25,7 +25,9 @@
        content]]])))
 
 (defn kanban-card [card]
-  [:div.card
+  [:div.card {"hx-on:dragstart" (format "event.dataTransfer.setData('text/plain', '%s')" (:id card))
+              :draggable "true"
+              :id (str "card-" (:id card))}
    [:header.card-header
     [:p.card-header-title (:title card)]
     [:button.card-header-icon
@@ -39,7 +41,13 @@
      "Delete"]]])
 
 (defn kanban-column [{:keys [stage cards]}]
-  (into [:div.column [:h2.subtitle.has-text-centered (get db/stages stage)]] (map kanban-card) cards))
+  (into [:div.column {"hx-on:dragover" "event.preventDefault(); event.dataTransfer.dropEffect = 'move'"
+                      :hx-trigger "drop"
+                      :hx-post "/change-stage"
+                      :hx-vals (format "js:{\"id\": event?.dataTransfer?.getData('text/plain'), \"stage\": \"%s\"}" (name stage))
+                      :hx-target "this"
+                      :hx-swap "outerHTML"}
+         [:h2.subtitle.has-text-centered (get db/stages stage)]] (map kanban-card) cards))
 
 (defn trial-board [cards-by-stage]
   [:div
